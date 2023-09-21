@@ -1,0 +1,69 @@
+html {
+  width: 100%;
+  height: 100%;
+  font-family: "Courier New", Courier, monospace;
+  color: white;
+  background-color: #2f3237;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+main {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  width: 1280px;
+  background-color: #3b3f45;
+}
+
+#videos {
+  display: grid;
+}
+
+#localScreen {
+  display: block;
+  position: relative;
+  grid-row-start: 1;
+  grid-row-end: 5;
+}
+
+.video {
+  display: inline-block;
+}
+
+#panel {
+  max-width: 300px;
+}
+
+label {
+  display: block;
+  margin: 10px 0;
+}
+
+input {
+  padding: 10px;
+  height: 20px;
+  border: 0;
+}
+
+#join {
+  display: inline;
+  width: 50px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  margin-left: 10px;
+}
+
+#create {
+  display: inline;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+}
