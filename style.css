@@ -33,10 +33,6 @@ main {
   grid-row-end: 5;
 }
 
-.video {
-  display: inline-block;
-}
-
 #panel {
   max-width: 300px;
 }
@@ -66,4 +62,20 @@ input {
   height: 30px;
   padding: 0 10px;
   border: 0;
+}
+
+#gallery {
+  overflow-x: scroll;
+}
+
+.hidden {
+  display: none;
+}
+
+#roomCode {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  margin: 0 0 0.5em 0.5em;
+  font-size: 13px;
 }

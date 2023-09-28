@@ -3,14 +3,27 @@
   <head>
     <title>Parley</title>
     <meta charset="utf-8" />
+    <meta
+      name="description"
+      content="No-frills encrypted peer-to-peer web conferencing."
+    />
+    <meta
+      name="keywords"
+      content="conference, web, video chat, chat, zoom, bluejeans, teams, meets"
+    />
+    <meta name="author" content="Elias Gabriel" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <link href="vendor/normalize.css" rel="stylesheet" />
     <link href="style.css" rel="stylesheet" />
+
+    <script src="vendor/peerjs_1-5-0.min.js" defer></script>
     <script src="applicatiion.js" defer></script>
   </head>
 
   <body>
     <main>
+      <p id="roomCode" class="hidden">Room code: <span>connecting...</span></p>
       <div id="captures">
         <video
           id="localScreen"
@@ -20,46 +33,16 @@
           disablepictureinpicture
           disableremoteplayback
         ></video>
-        <!-- <video
-          class="video"
-          width="144"
-          height="128"
-          autoplay
-          disablepictureinpicture
-          disableremoteplayback
-        ></video
-        ><video
-          class="video"
-          width="144"
-          height="128"
-          autoplay
-          disablepictureinpicture
-          disableremoteplayback
-        ></video
-        ><video
-          class="video"
-          width="144"
-          height="128"
-          autoplay
-          disablepictureinpicture
-          disableremoteplayback
-        ></video
-        ><video
-          class="video"
-          width="144"
-          height="128"
-          autoplay
-          disablepictureinpicture
-          disableremoteplayback
-        ></video
-        ><video
-          class="video"
-          width="144"
-          height="128"
-          autoplay
-          disablepictureinpicture
-          disableremoteplayback
-        ></video> -->
+        <div id="gallery" class="hidden">
+          <video
+            class="hidden"
+            width="144"
+            height="128"
+            autoplay
+            disablepictureinpicture
+            disableremoteplayback
+          ></video>
+        </div>
       </div>
 
       <div id="panel">
@@ -67,9 +50,11 @@
         <p>Either join a discussion or start a new one.</p>
         <br />
         <label for="code">Existing code:</label>
-        <input name="code" type="text" /><button id="join">Join</button>
+        <input id="remoteRoomCode" name="code" type="text" /><button id="join" disabled>
+          Join
+        </button>
         <p>or</p>
-        <button id="create">Start a discussion</button>
+        <button id="create" disabled>Start a discussion</button>
       </div>
     </main>
   </body>
