@@ -12,6 +12,7 @@ No-frills encrypted peer-to-peer web conferencing.
 
 ## To Do
 
+- Audio mute indicators on participants.
 - Screen name.
 - Chat.
 - Legitimate error handling.
