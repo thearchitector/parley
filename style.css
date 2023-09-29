@@ -22,17 +22,6 @@ main {
   background-color: #3b3f45;
 }
 
-#videos {
-  display: grid;
-}
-
-#localScreen {
-  display: block;
-  position: relative;
-  grid-row-start: 1;
-  grid-row-end: 5;
-}
-
 #panel {
   max-width: 300px;
 }
@@ -64,18 +53,64 @@ input {
   border: 0;
 }
 
-#gallery {
-  overflow-x: scroll;
-}
-
-.hidden {
-  display: none;
-}
-
 #roomCode {
   position: absolute;
   bottom: 0;
   left: 0;
   margin: 0 0 0.5em 0.5em;
   font-size: 13px;
+}
+
+video {
+  background-color: #35383e;
+}
+
+#localScreen {
+  display: block;
+  position: relative;
+}
+
+#gallery {
+  overflow-y: hidden;
+  overflow-x: scroll;
+  height: 150px;
+  background-color: #35383e;
+  margin-top: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+#selfview {
+  position: relative;
+}
+
+#controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding-left: 7px;
+  margin-bottom: 7px;
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+  padding: 0.25em;
+  background-color: #0003;
+  border-radius: 7px;
+}
+
+.control {
+  width: 1.5em;
+  height: 1.5em;
+  transition: 0.05s ease-in;
+  vertical-align: bottom;
+}
+
+.control:hover {
+  background-color: #0007;
+  transition: 0.05s ease-in;
+  cursor: pointer;
 }

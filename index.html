@@ -25,14 +25,28 @@
     <main>
       <p id="roomCode" class="hidden">Room code: <span>connecting...</span></p>
       <div id="captures">
-        <video
-          id="localScreen"
-          width="720"
-          height="640"
-          autoplay
-          disablepictureinpicture
-          disableremoteplayback
-        ></video>
+        <div id="selfview">
+          <video
+            id="localScreen"
+            width="720"
+            height="640"
+            autoplay
+            disablepictureinpicture
+            disableremoteplayback
+          ></video>
+          <div id="controls">
+            <img
+              id="muteAudio"
+              class="control icon hidden"
+              src="vendor/icons/microphone-solid.svg"
+            />
+            <img
+              id="muteVideo"
+              class="control icon hidden"
+              src="vendor/icons/video-solid.svg"
+            />
+          </div>
+        </div>
         <div id="gallery" class="hidden">
           <video
             class="hidden"

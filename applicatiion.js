@@ -8,8 +8,8 @@ let roomCode = null;
 // webrtc provides 2-party bidirectional communication. in order to support
 // "conference-style" multiparty communication, the room host keeps track
 // of all the peers that have connected to it, and disseminates those
-// peers to all peers whenever a new peer connects, so that it may connect
-// to them.
+// peers to a new peer whenever it connects, so that it may then connect
+// to all of the others.
 const connectedParticipants = [];
 
 // the "stream" event gets called twice, so we need to track their ids to prevent
@@ -53,6 +53,7 @@ function handleVideoCalls(isHost) {
             handleMediaStream(call);
           });
           // nothing will get sent over this again, so we can throw it out
+          // TBD/TODO: keep open for host swapping?
           conn.close();
         });
       });
@@ -115,22 +116,45 @@ async function initialize() {
   setupCreateDiscussion();
   setupJoinDiscussion();
 
-  // setup the local camera
+  const localScreen = document.getElementById("localScreen");
   try {
+    // setup the local camera
     localStream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
-    document.getElementById("localScreen").srcObject = localStream;
-    document.getElementById("localScreen").muted = true;
+    localScreen.srcObject = localStream;
+    localScreen.muted = true;
+
+    // setup mic and camera controls
+    function setupControl(element, track, icon) {
+      element.className = "control icon";
+      element.addEventListener("click", (_) => {
+        const enabled = track.enabled;
+        track.enabled = !enabled;
+        element.src = `vendor/icons/${icon}${enabled ? "-slash-" : "-"}solid.svg`;
+      });
+    }
+
+    // setup mic mute button
+    setupControl(
+      document.getElementById("muteAudio"),
+      localStream.getAudioTracks()[0],
+      "microphone"
+    );
+    // setup camera mute button
+    setupControl(
+      document.getElementById("muteVideo"),
+      localStream.getVideoTracks()[0],
+      "video"
+    );
 
     // enable create/join buttons
     document.getElementById("join").removeAttribute("disabled");
     document.getElementById("create").removeAttribute("disabled");
   } catch (err) {
-    document.getElementById("localScreen").srcObject = undefined;
-    document.getElementById("localScreen").poster =
-      "https://www.w3schools.com/images/img_certification_up_generic_html_300.png";
+    localScreen.srcObject = undefined;
+    localScreen.poster = "vendor/icons/video-slash-solid.svg";
   }
 }
 
