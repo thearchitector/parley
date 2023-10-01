@@ -62,12 +62,16 @@ input {
 }
 
 video {
-  background-color: #35383e;
+  background-color: #2f3237;
 }
 
 #localScreen {
   display: block;
   position: relative;
+}
+
+#localScreen video {
+  background-color: #35383e;
 }
 
 #gallery {
@@ -78,15 +82,20 @@ video {
   margin-top: 10px;
 }
 
+#alone {
+  margin: 2em auto 0;
+  width: fit-content;
+}
+
 .hidden {
   display: none;
 }
 
-#selfview {
+.preview {
   position: relative;
 }
 
-#controls {
+.icons {
   position: absolute;
   bottom: 0;
   left: 0;
