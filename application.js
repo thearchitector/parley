@@ -15,31 +15,26 @@ let isHost = false;
  * of all the peers that have connected to it, so it may send status updates
  * or respond to data payloads.
  */
-// hosts disseminate this list of peers to a new peer whenever it connects, so
-// that it may then connect to all of the others.
-const connectedParticipants = [];
+// a mapping of between a remote peer's id and the communication pipe to it.
+// since we know a pipe must exist (vs a media stream, which may not because of
+// no AV hardware), this also serves as the authoritative list of connected remotes
+const connectedDataChannels = {};
 // a mapping of between a remote peer id and its mute status icon element
 const connectedMediaStreams = {};
-// a mapping of between a remote peer's id and the communication pipe to it
-const connectedDataChannels = {};
 
 function handleEventPackets(datachannel) {
-  connectedDataChannels[datachannel.peer] = datachannel;
-
   // remove the channel mapping if the remote disconnects
   datachannel.on("close", () => {
-    delete connectedDataChannels[datachannel.peer];
+    // this should always be true, but protects against the race condition where
+    // the remote disconnects before the channel is actually opened
+    if (datachannel.peer in connectedDataChannels)
+      delete connectedDataChannels[datachannel.peer];
   });
 
+  // const hasInitialized = new Promise((resolve) => {
   // as soon as the connection is available, send whatever data is required to
   // sync the local and remote states
   datachannel.on("open", () => {
-    // current mute status
-    datachannel.send({
-      type: "syncMute",
-      payload: { peerId: peer.id, muted: !localStream.getAudioTracks()[0].enabled },
-    });
-
     if (isHost) {
       // send all the other room participants the new peer.
       // it is the responsibility of a new participant to connect to all
@@ -49,10 +44,16 @@ function handleEventPackets(datachannel) {
       // the first participant has no way of knowing it is the first, and
       // thus waits for a message before terminating the data connection,
       // so this must send it an empty list rather than nothing at all.
-      datachannel.send({ type: "initialize", payload: connectedParticipants });
-      connectedParticipants.push(datachannel.peer);
+      datachannel.send({
+        type: "initialize",
+        payload: Object.keys(connectedDataChannels),
+      });
     }
+
+    connectedDataChannels[datachannel.peer] = datachannel;
+    resolve();
   });
+  // });
 
   // handles processing incoming data payloads according to their type
   datachannel.on("data", (data) => {
@@ -62,10 +63,7 @@ function handleEventPackets(datachannel) {
       case "initialize":
         // try to connect to all the other participants in the call, as
         // disseminated by the host
-        payload.forEach((participant) => {
-          const call = peer.call(participant, localStream);
-          handleMediaStream(call);
-        });
+        payload.forEach(connectToRemote);
         break;
       case "syncMute":
         // toggle the mute icon
@@ -77,6 +75,9 @@ function handleEventPackets(datachannel) {
         console.warn(`Received unexpected data packet payload of type ${data.type}`);
     }
   });
+
+  // this function returns a promise to ensure that
+  // return hasInitialized;
 }
 
 function handleMediaStream(call) {
@@ -88,25 +89,51 @@ function handleMediaStream(call) {
     // the "stream" event gets called twice, so skip handling if the remote is in our
     // mapping already, as to prevent creating multiple "previews" for a single client.
     // @ref: https://github.com/peers/peerjs/issues/609
-    if (call.peer in connectedMediaStreams) return;
+    const peerId = call.peer;
+    if (peerId in connectedMediaStreams) return;
+
+    // hide the "alone" message
+    if (galleryElem.children.length === 2) galleryElem.children[0].className = "hidden";
 
     const currentVideo = galleryElem.children[galleryElem.childElementCount - 1];
     const newNode = currentVideo.cloneNode(true);
 
     // remove the video if the remote disconnects
-    connectedMediaStreams[call.peer] = currentVideo.children[1].children[0];
+    connectedMediaStreams[peerId] = currentVideo.children[1].children[0];
     call.on("close", () => {
       currentVideo.remove();
-      delete connectedMediaStreams[call.peer];
+      delete connectedMediaStreams[peerId];
       if (galleryElem.children.length === 2) galleryElem.children[0].className = "";
     });
 
-    // update the DOM (unhide the preview element and add the next template)
-    if (galleryElem.children.length === 2) galleryElem.children[0].className = "hidden";
+    // update the DOM (set initial mute status, unhide the preview element and add
+    // the next template)
+    connectedMediaStreams[peerId].src = `vendor/icons/microphone${
+      call.metadata.muted ? "-slash-" : "-"
+    }solid.svg`;
     currentVideo.children[0].srcObject = remoteStream;
     currentVideo.className = "preview";
     galleryElem.appendChild(newNode);
   });
+}
+
+function connectToRemote(peerId) {
+  // connect (establish data connection)
+  const datachannel = peer.connect(peerId, dataChannelConfig);
+  handleEventPackets(datachannel);
+
+  // call (establish AV connection), providing the current mute state.
+  //
+  // this CAN cause a race condition if someone (un)mutes between
+  // this call and when the setup on the remote side is complete enough
+  // to receive the status change. it is the lesser of the two
+  // synchronization evils, though (the alternative being sending the
+  // status only after both sides are certain the other has finished setting
+  // everything up -- not trivial)
+  const call = peer.call(peerId, localStream, {
+    metadata: { muted: !localStream.getAudioTracks()[0].enabled },
+  });
+  handleMediaStream(call);
 }
 
 function parley() {
@@ -121,18 +148,12 @@ function parley() {
   roomCodeElem.className = "";
 
   // on assigned identity
-  peer.on("open", (_) => {
+  peer.on("open", (id) => {
+    console.debug(`Local identity: ${id}`);
     roomCodeElem.children[0].textContent = roomCode;
-    // when im available, and im not the host, connect to it
-    if (!isHost) {
-      // call (establish AV connection)
-      const call = peer.call(roomCode, localStream);
-      handleMediaStream(call);
 
-      // connect (establish data connection)
-      const datachannel = peer.connect(roomCode, dataChannelConfig);
-      handleEventPackets(datachannel);
-    }
+    // when im available, and im not the host, connect to it
+    if (!isHost) connectToRemote(roomCode);
   });
 
   // on established data channel
@@ -140,12 +161,12 @@ function parley() {
 
   // on received media call
   peer.on("call", (call) => {
-    call.answer(localStream);
     handleMediaStream(call);
+    call.answer(localStream);
   });
 }
 
-async function setupCreateDiscussion(createElement) {
+function setupCreateDiscussion(createElement) {
   /** Creates a new discussion. */
   createElement.addEventListener("click", (_) => {
     isHost = true;
@@ -158,7 +179,7 @@ async function setupCreateDiscussion(createElement) {
   });
 }
 
-async function setupJoinDiscussion(joinElement) {
+function setupJoinDiscussion(joinElement) {
   /** Joins an existing discussion. */
   joinElement.addEventListener("click", (_) => {
     roomCode = document.getElementById("remoteRoomCode").value.trim();
@@ -168,8 +189,10 @@ async function setupJoinDiscussion(joinElement) {
   });
 }
 
-async function initialize() {
-  /** Runs prerequisite initialization, including graceful disconnects */
+(async () => {
+  /**
+   * Runs prerequisite initialization, including graceful disconnects.
+   */
   const localScreen = document.getElementById("localScreen");
   try {
     // setup the local camera
@@ -203,8 +226,10 @@ async function initialize() {
       (isMuted) => {
         // mediastreams come with a "mute" and "unmute" event. unfortunately, those
         // events are not propagated across the network. instead, we have to send
-        // an "event packet" updating all clients whenever our local state changes
-        for (const participant in connectedDataChannels) {
+        // an "event packet" updating all clients whenever our local state changes.
+        for (const participant in connectedMediaStreams) {
+          // loop through media streams keys instead of channels since only clients
+          // connected via media streams can (un)mute
           const datachannel = connectedDataChannels[participant];
           datachannel.send({
             type: "syncMute",
@@ -239,7 +264,6 @@ async function initialize() {
   } catch (err) {
     localScreen.srcObject = undefined;
     localScreen.poster = "vendor/icons/video-slash-solid.svg";
+    console.error("Camera and microphone access is required.");
   }
-}
-
-initialize();
+})();

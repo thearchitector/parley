@@ -22,7 +22,9 @@ No-frills encrypted peer-to-peer web conferencing.
 - Mobile site (no video, chat only).
 - Performance
   - Restrict local video to 640p using [sdp transform or media constraints](https://stackoverflow.com/questions/71838689/how-to-use-sdptransform-in-peerjs-for-high-quality-audio-bitrate)
-  - Restrict outgoing video to 128p.
+  - Restrict outgoing video to 144p.
+  - Spoke-style communication? (instead of each connecting to every other, they all connect to the host which sends AV/data to every other)
+    - Not immediately obvious if this is a better design -- it reduces the total number of conns, but at least doubles latency for each one
 
 ## License
 
