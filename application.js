@@ -51,7 +51,7 @@ function handleEventPackets(datachannel) {
     }
 
     connectedDataChannels[datachannel.peer] = datachannel;
-    resolve();
+    // resolve();
   });
   // });
 
