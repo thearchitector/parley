@@ -15,6 +15,7 @@ body {
 }
 
 main {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-evenly;
@@ -53,6 +54,10 @@ input {
   border: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 #roomCode {
   position: absolute;
   bottom: 0;
@@ -61,52 +66,44 @@ input {
   font-size: 13px;
 }
 
-video {
-  background-color: #2f3237;
-}
-
-#localScreen {
-  display: block;
-  position: relative;
-}
-
-#localScreen video {
-  background-color: #35383e;
-}
-
 #gallery {
-  overflow-y: hidden;
-  overflow-x: scroll;
-  height: 166px;
-  background-color: #35383e;
-  margin-top: 10px;
-  font-size: 0; /* hack because of how browsers render in-source newlines */
-}
-
-#alone {
-  margin: 2em auto 0;
-  width: fit-content;
-}
-
-.hidden {
-  display: none !important;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  width: 720px;
+  height: 640px;
+  align-items: center;
+  gap: 10px;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  direction: rtl;
 }
 
 .preview {
   position: relative;
   display: inline-block;
+  flex: 1 1 30%;
+  max-width: 640px;
+  max-height: 480px;
+  min-width: 192px;
+  aspect-ratio: 4/3;
+  background: #2f3237;
 }
 
-#gallery .preview:not(:first-of-type) {
-  margin-left: 7px;
+video {
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .icons {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  padding-left: 7px;
-  margin-bottom: 7px;
+  bottom: 7px;
+  left: 7px;
+  height: 1.5em;
 }
 
 .icon {
@@ -117,15 +114,21 @@ video {
   border-radius: 7px;
 }
 
-.control {
-  width: 1.5em;
-  height: 1.5em;
+#controls {
   transition: 0.05s ease-in;
-  vertical-align: bottom;
+  font-size: 24px;
 }
 
-.control:hover {
+#controls .icon {
   background-color: #0007;
   transition: 0.05s ease-in;
   cursor: pointer;
+}
+
+#controls.inverted .icon {
+  outline: 1px solid #fff7;
+}
+
+#controls.inverted .icon:hover {
+  background-color: #fff7;
 }

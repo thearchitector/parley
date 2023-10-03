@@ -92,9 +92,6 @@ function handleMediaStream(call) {
     const peerId = call.peer;
     if (peerId in connectedMediaStreams) return;
 
-    // hide the "alone" message
-    if (galleryElem.children.length === 2) galleryElem.children[0].className = "hidden";
-
     const currentVideo = galleryElem.children[galleryElem.childElementCount - 1];
     const newNode = currentVideo.cloneNode(true);
 
@@ -103,7 +100,6 @@ function handleMediaStream(call) {
     call.on("close", () => {
       currentVideo.remove();
       delete connectedMediaStreams[peerId];
-      if (galleryElem.children.length === 2) galleryElem.children[0].className = "";
     });
 
     // update the DOM (set initial mute status, unhide the preview element and add
@@ -144,7 +140,6 @@ function parley() {
   console.debug(`Connecting to room: ${roomCode}`);
 
   document.getElementById("panel").remove();
-  galleryElem.className = "";
   roomCodeElem.className = "";
 
   // on assigned identity
@@ -204,12 +199,17 @@ function setupJoinDiscussion(joinElement) {
     localScreen.muted = true; // prevent feedback
 
     // setup mic and camera controls
+    const controlsElem = document.getElementById("controls");
     function setupControl(element, track, icon, sideEffect) {
-      element.className = "control icon";
+      element.className = "icon";
       element.addEventListener("click", (_) => {
         const willDisable = track.enabled;
         track.enabled = !willDisable;
         element.src = `vendor/icons/${icon}${willDisable ? "-slash-" : "-"}solid.svg`;
+
+        // if the video is disabled, invert both icon colors so they're easier to see
+        if (icon === "video")
+          controlsElem.className = `icons controls ${willDisable ? "inverted" : ""}`;
 
         // run side effect
         if (sideEffect !== undefined) sideEffect(willDisable);

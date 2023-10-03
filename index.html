@@ -24,51 +24,40 @@
   <body>
     <main>
       <p id="roomCode" class="hidden">Room code: <span>connecting...</span></p>
-      <div id="captures">
+      <div id="gallery">
         <div class="preview">
           <video
             id="localScreen"
-            width="640"
-            height="480"
             autoplay
             disablepictureinpicture
             disableremoteplayback
           ></video>
-          <div class="icons">
+          <div id="controls" class="icons">
             <img
               id="muteAudio"
-              class="control icon hidden"
+              class="icon hidden"
               src="vendor/icons/microphone-solid.svg"
             />
             <img
               id="muteVideo"
-              class="control icon hidden"
+              class="icon hidden"
               src="vendor/icons/video-solid.svg"
             />
           </div>
         </div>
-        <div id="gallery" class="hidden">
-          <p id="alone">You are alone.</p>
-          <div class="preview hidden">
-            <video
-              width="192"
-              height="144"
-              autoplay
-              disablepictureinpicture
-              disableremoteplayback
-            ></video>
-            <div class="icons">
-              <img class="icon" src="vendor/icons/microphone-solid.svg" />
-            </div>
+        <div class="preview hidden">
+          <video autoplay disablepictureinpicture disableremoteplayback></video>
+          <div class="icons">
+            <img id="muteAudio" class="icon" src="vendor/icons/microphone-solid.svg" />
           </div>
         </div>
       </div>
 
       <div id="panel">
         <h1>Parley 🏴‍☠️</h1>
-        <p>Either join a discussion or start a new one.</p>
+        <p>Either join a specific discussion or start a new one.</p>
         <br />
-        <label for="code">Existing code:</label>
+        <label for="code">Room code:</label>
         <input id="remoteRoomCode" name="code" type="text" /><button id="join" disabled>
           Join
         </button>
