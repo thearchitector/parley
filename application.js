@@ -1,5 +1,6 @@
 const galleryElem = document.getElementById("gallery");
 const roomCodeElem = document.getElementById("roomCode");
+const galleryTemplate = galleryElem.children[1];
 
 const peerConfig = { secure: true };
 const dataChannelConfig = { serialization: "json" };
@@ -92,13 +93,12 @@ function handleMediaStream(call) {
     const peerId = call.peer;
     if (peerId in connectedMediaStreams) return;
 
-    const currentVideo = galleryElem.children[galleryElem.childElementCount - 1];
-    const newNode = currentVideo.cloneNode(true);
+    const newPreview = galleryTemplate.cloneNode(true);
 
     // remove the video if the remote disconnects
-    connectedMediaStreams[peerId] = currentVideo.children[1].children[0];
+    connectedMediaStreams[peerId] = newPreview.children[1].children[0];
     call.on("close", () => {
-      currentVideo.remove();
+      newPreview.remove();
       delete connectedMediaStreams[peerId];
     });
 
@@ -107,9 +107,9 @@ function handleMediaStream(call) {
     connectedMediaStreams[peerId].src = `vendor/icons/microphone${
       call.metadata.muted ? "-slash-" : "-"
     }solid.svg`;
-    currentVideo.children[0].srcObject = remoteStream;
-    currentVideo.className = "preview";
-    galleryElem.appendChild(newNode);
+    newPreview.children[0].srcObject = remoteStream;
+    newPreview.className = "preview";
+    galleryElem.prepend(newPreview);
   });
 }
 

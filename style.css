@@ -69,26 +69,45 @@ input {
 #gallery {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-evenly;
-  width: 720px;
-  height: 640px;
+  justify-content: center;
+  width: calc(720px + 20px);
+  height: calc((180px * 3) + 20px);
   align-items: center;
   gap: 10px;
   overflow-y: scroll;
   scrollbar-width: thin;
   scrollbar-gutter: stable;
   direction: rtl;
+  padding-left: 20px;
+  scroll-snap-type: y mandatory;
+  align-content: safe center; /* doesn't work on safari */
 }
 
 .preview {
   position: relative;
   display: inline-block;
   flex: 1 1 30%;
-  max-width: 640px;
-  max-height: 480px;
-  min-width: 192px;
+  max-width: 240px;
   aspect-ratio: 4/3;
   background: #2f3237;
+  scroll-snap-align: start;
+}
+
+/* one preview (alone) */
+.preview:first-child:nth-last-child(2),
+.preview:first-child:nth-last-child(2) ~ .preview {
+  max-width: 640px;
+}
+
+/* 2, 3, or 4 previews */
+.preview:first-child:nth-last-child(3),
+.preview:first-child:nth-last-child(3) ~ .preview,
+.preview:first-child:nth-last-child(4),
+.preview:first-child:nth-last-child(4) ~ .preview,
+.preview:first-child:nth-last-child(5),
+.preview:first-child:nth-last-child(5) ~ .preview {
+  max-width: 361px;
+  min-height: calc(361px * (3 / 4));
 }
 
 video {
