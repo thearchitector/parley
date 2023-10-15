@@ -18,6 +18,7 @@
     <link href="style.css" rel="stylesheet" />
 
     <script src="vendor/peerjs_1-5-0.min.js" defer></script>
+    <script src="vendor/randomNames.js" defer></script>
     <script src="application.js" defer></script>
   </head>
 
@@ -26,12 +27,7 @@
       <p id="roomCode" class="hidden">Room code: <span>connecting...</span></p>
       <div id="gallery">
         <div class="preview">
-          <video
-            id="localScreen"
-            autoplay
-            disablepictureinpicture
-            disableremoteplayback
-          ></video>
+          <video id="localScreen" autoplay disableremoteplayback></video>
           <div id="controls" class="icons">
             <img
               id="muteAudio"
@@ -43,12 +39,16 @@
               class="icon hidden"
               src="vendor/icons/video-solid.svg"
             />
+            <div class="name-container hidden">
+              <input id="name" class="icon" size="1" maxlength="20" />
+            </div>
           </div>
         </div>
         <div class="preview hidden">
-          <video autoplay disablepictureinpicture disableremoteplayback></video>
+          <video autoplay disableremoteplayback></video>
           <div class="icons">
             <img id="muteAudio" class="icon" src="vendor/icons/microphone-solid.svg" />
+            <span class="name-container icon"></span>
           </div>
         </div>
       </div>

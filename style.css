@@ -1,9 +1,20 @@
+@font-face {
+  font-family: "Cousine";
+  src: url("vendor/Cousine.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 html {
   width: 100%;
   height: 100%;
-  font-family: "Courier New", Courier, monospace;
-  color: white;
   background-color: #2f3237;
+  overflow: hidden;
+  font-family: "Cousine", monospace;
+  font-weight: normal;
+  font-style: normal;
+  color: white;
 }
 
 body {
@@ -18,13 +29,13 @@ main {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
   width: 1280px;
   background-color: #3b3f45;
 }
 
 #panel {
   max-width: 300px;
+  margin-right: auto;
 }
 
 label {
@@ -36,6 +47,7 @@ input {
   padding: 10px;
   height: 20px;
   border: 0;
+  appearance: none;
 }
 
 #join {
@@ -81,6 +93,12 @@ input {
   padding-left: 20px;
   scroll-snap-type: y mandatory;
   align-content: safe center; /* doesn't work on safari */
+  margin-left: auto;
+}
+
+#localScreen {
+  /* people expect the camera to act like a mirror */
+  transform: rotateY(180deg);
 }
 
 .preview {
@@ -91,12 +109,14 @@ input {
   aspect-ratio: 4/3;
   background: #2f3237;
   scroll-snap-align: start;
+  font-size: 11px;
 }
 
 /* one preview (alone) */
 .preview:first-child:nth-last-child(2),
 .preview:first-child:nth-last-child(2) ~ .preview {
   max-width: 640px;
+  font-size: 16px;
 }
 
 /* 2, 3, or 4 previews */
@@ -108,6 +128,7 @@ input {
 .preview:first-child:nth-last-child(5) ~ .preview {
   max-width: 361px;
   min-height: calc(361px * (3 / 4));
+  font-size: 13.25px;
 }
 
 video {
@@ -120,7 +141,8 @@ video {
   position: absolute;
   bottom: 5px;
   left: 5px;
-  height: 1.5em;
+  direction: ltr;
+  width: calc(100% - 10px);
 }
 
 .icon {
@@ -129,17 +151,26 @@ video {
   padding: 0.25em;
   background-color: #0003;
   border-radius: 7px;
+  vertical-align: middle;
+  line-height: 1em;
 }
 
-#controls {
-  transition: 0.05s ease-in;
-  font-size: 24px;
+.name-container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: auto;
+  color: white;
 }
 
 #controls .icon {
   background-color: #0007;
-  transition: 0.05s ease-in;
   cursor: pointer;
+  transition: 0.05s ease-in;
+}
+
+#controls .icon:hover {
+  background-color: #000a;
 }
 
 #controls.inverted .icon {
@@ -148,4 +179,25 @@ video {
 
 #controls.inverted .icon:hover {
   background-color: #fff7;
+}
+
+#controls img {
+  font-size: 24px;
+}
+
+#controls div.name-container {
+  display: inline-grid;
+}
+
+#controls div.name-container::after,
+#controls input {
+  width: auto;
+  grid-area: 1 / 2;
+  color: white;
+}
+
+#controls div.name-container::after {
+  content: attr(data-value) " ";
+  visibility: hidden;
+  white-space: pre-wrap;
 }

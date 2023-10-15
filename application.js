@@ -1,6 +1,7 @@
 const galleryElem = document.getElementById("gallery");
 const roomCodeElem = document.getElementById("roomCode");
 const galleryTemplate = galleryElem.children[1];
+const nameElement = document.getElementById("name");
 
 const peerConfig = { secure: true };
 const dataChannelConfig = { serialization: "json" };
@@ -23,18 +24,90 @@ const connectedDataChannels = {};
 // a mapping of between a remote peer id and its mute status icon element
 const connectedMediaStreams = {};
 
-function handleEventPackets(datachannel) {
+// communication is trivial once you've established both sides of the party can talk.
+// when a participant is first connecting, however, theres no guarantee that either side
+// will be ready enough to receive the data the other party has sent them. this is
+// problematic for synchronizing initial state, as both sides need to send info like
+// "mute status" and "display name". to avoid figuring out all the proper execution
+// flows, and to keep the mental model simpler, this instead tracks all the
+// mediastream-related data requests a client has received BEFORE that client has
+// concretely established a 2-way AV stream with the other party. each client is then
+// responsible for running the initialization callbacks related to the other party,
+// rather than both parties indicating they should sync states with each other once
+// both parties are ready.
+//
+// in order words, when this client establishes a data channel, the other party will
+// send its current state. those updates will be queued until this client has finished
+// setting up the AV stuff, at which point it will then make those updates. if this
+// client is already done setting stuff up, then nothing needs to be queued and those
+// updates can happen as they would normally (immediately).
+//
+// this WILL cause a race condition if the other party changes state between sending
+// its state and the queued updates being run, but i asset it is the lesser of the two
+// synchronization evils.
+const stateInitializationQueues = {};
+
+function runOrQueueUpdate(peerId, updateFn) {
+  /**
+   * If the provided peer already has an AV connection, run the update immediately.
+   * Otherwise, add the callback to peer's queue so that it may be run when the stream
+   * is established.
+   */
+  if (peerId in connectedMediaStreams) updateFn();
+  else stateInitializationQueues[peerId].push(updateFn);
+}
+
+function handleDataPackets(packet) {
+  /** Defines the expected behavior for every packet of data received by the client. */
+  const payload = packet.payload;
+  const peerId = packet.peerId;
+
+  switch (packet["type"]) {
+    case "initialize":
+      // try to connect to all the other participants in the call, as
+      // disseminated by the host
+      payload.forEach(connectToRemote);
+      break;
+    case "syncMute":
+      // toggle the mute icon
+      runOrQueueUpdate(peerId, () => {
+        connectedMediaStreams[
+          peerId
+        ].children[1].children[0].src = `vendor/icons/microphone${
+          payload ? "-" : "-slash-"
+        }solid.svg`;
+      });
+      break;
+    case "changeName":
+      // update the peer's display name
+      runOrQueueUpdate(peerId, () => {
+        connectedMediaStreams[peerId].children[1].children[1].textContent = payload;
+      });
+      break;
+    default:
+      console.warn(
+        `Received unexpected data packet payload of type ${packet["type"]} from peer ${peerId}`
+      );
+  }
+}
+
+function establishDataStream(datachannel) {
+  /**
+   * Setups up the callbacks necessary to initialize, process, and close a
+   * datachannel. Packets of data are given to the handler to understand.
+   */
+
   // remove the channel mapping if the remote disconnects
   datachannel.on("close", () => {
-    // this should always be true, but protects against the race condition where
+    // these should always be true, but protects against the race condition where
     // the remote disconnects before the channel is actually opened
     if (datachannel.peer in connectedDataChannels)
       delete connectedDataChannels[datachannel.peer];
+    if (datachannel.peer in stateInitializationQueues)
+      delete stateInitializationQueues[datachannel.peer];
   });
 
-  // const hasInitialized = new Promise((resolve) => {
-  // as soon as the connection is available, send whatever data is required to
-  // sync the local and remote states
+  // as soon as the connection is available
   datachannel.on("open", () => {
     if (isHost) {
       // send all the other room participants the new peer.
@@ -51,34 +124,26 @@ function handleEventPackets(datachannel) {
       });
     }
 
+    // send current mute status
+    datachannel.send({
+      peerId: peer.id,
+      type: "syncMute",
+      payload: localStream.getAudioTracks()[0].enabled,
+    });
+
+    // send display name
+    datachannel.send({
+      peerId: peer.id,
+      type: "changeName",
+      payload: nameElement.value,
+    });
+
     connectedDataChannels[datachannel.peer] = datachannel;
-    // resolve();
+    stateInitializationQueues[datachannel.peer] = [];
   });
-  // });
 
   // handles processing incoming data payloads according to their type
-  datachannel.on("data", (data) => {
-    const payload = data.payload;
-
-    switch (data["type"]) {
-      case "initialize":
-        // try to connect to all the other participants in the call, as
-        // disseminated by the host
-        payload.forEach(connectToRemote);
-        break;
-      case "syncMute":
-        // toggle the mute icon
-        connectedMediaStreams[payload.peerId].src = `vendor/icons/microphone${
-          payload.muted ? "-slash-" : "-"
-        }solid.svg`;
-        break;
-      default:
-        console.warn(`Received unexpected data packet payload of type ${data.type}`);
-    }
-  });
-
-  // this function returns a promise to ensure that
-  // return hasInitialized;
+  datachannel.on("data", handleDataPackets);
 }
 
 function handleMediaStream(call) {
@@ -96,17 +161,18 @@ function handleMediaStream(call) {
     const newPreview = galleryTemplate.cloneNode(true);
 
     // remove the video if the remote disconnects
-    connectedMediaStreams[peerId] = newPreview.children[1].children[0];
+    connectedMediaStreams[peerId] = newPreview;
     call.on("close", () => {
       newPreview.remove();
       delete connectedMediaStreams[peerId];
     });
 
-    // update the DOM (set initial mute status, unhide the preview element and add
-    // the next template)
-    connectedMediaStreams[peerId].src = `vendor/icons/microphone${
-      call.metadata.muted ? "-slash-" : "-"
-    }solid.svg`;
+    // run any pending initializations
+    if (peerId in stateInitializationQueues)
+      stateInitializationQueues[peerId].forEach((fn) => fn());
+    delete stateInitializationQueues[peerId];
+
+    // update the DOM
     newPreview.children[0].srcObject = remoteStream;
     newPreview.className = "preview";
     galleryElem.prepend(newPreview);
@@ -116,19 +182,10 @@ function handleMediaStream(call) {
 function connectToRemote(peerId) {
   // connect (establish data connection)
   const datachannel = peer.connect(peerId, dataChannelConfig);
-  handleEventPackets(datachannel);
+  establishDataStream(datachannel);
 
-  // call (establish AV connection), providing the current mute state.
-  //
-  // this CAN cause a race condition if someone (un)mutes between
-  // this call and when the setup on the remote side is complete enough
-  // to receive the status change. it is the lesser of the two
-  // synchronization evils, though (the alternative being sending the
-  // status only after both sides are certain the other has finished setting
-  // everything up -- not trivial)
-  const call = peer.call(peerId, localStream, {
-    metadata: { muted: !localStream.getAudioTracks()[0].enabled },
-  });
+  // call (establish AV connection)
+  const call = peer.call(peerId, localStream);
   handleMediaStream(call);
 }
 
@@ -152,7 +209,7 @@ function parley() {
   });
 
   // on established data channel
-  peer.on("connection", handleEventPackets);
+  peer.on("connection", establishDataStream);
 
   // on received media call
   peer.on("call", (call) => {
@@ -185,9 +242,7 @@ function setupJoinDiscussion(joinElement) {
 }
 
 (async () => {
-  /**
-   * Runs prerequisite initialization, including graceful disconnects.
-   */
+  /** Runs prerequisite initialization, including graceful disconnects. */
   const localScreen = document.getElementById("localScreen");
   try {
     // setup the local camera
@@ -232,8 +287,9 @@ function setupJoinDiscussion(joinElement) {
           // connected via media streams can (un)mute
           const datachannel = connectedDataChannels[participant];
           datachannel.send({
+            peerId: peer.id,
             type: "syncMute",
-            payload: { peerId: peer.id, muted: isMuted },
+            payload: { muted: isMuted },
           });
         }
       }
@@ -244,6 +300,29 @@ function setupJoinDiscussion(joinElement) {
       localStream.getVideoTracks()[0],
       "video"
     );
+
+    // assign a random name
+    nameElement.parentElement.className = "name-container";
+    nameElement.value = nameElement.parentNode.dataset.value = randomName();
+    // setup handlers to propagate name changes
+    nameElement.addEventListener(
+      "input",
+      (_) => (nameElement.parentNode.dataset.value = nameElement.value)
+    );
+    nameElement.addEventListener("change", (_) => {
+      if (nameElement.value.length === 0)
+        nameElement.value = nameElement.parentNode.dataset.value = randomName();
+
+      nameElement.blur();
+
+      for (const participant in connectedMediaStreams) {
+        const datachannel = connectedDataChannels[participant];
+        datachannel.send({
+          type: "changeName",
+          payload: { peerId: peer.id, displayName: nameElement.value },
+        });
+      }
+    });
 
     // ensure graceful closure and cleanup of the local peer
     // this is super important

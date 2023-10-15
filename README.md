@@ -10,22 +10,22 @@ No-frills peer-to-peer web conferencing.
 - See yourself.
 - Mute your mic and camera.
   - Audio mute indicators on yourself and participants.
+- Have a screen name.
 
-## Anti-features
+## Not features
 
 - Breakout rooms.
 - Session recording.
 
 ## To Do
 
-1. Screen name.
-2. Chat.
-3. Connect via URL.
+1. Chat.
+2. Connect via URL.
 
    - If you go to a URL with a peer id that already exists, you connect to their session.
    - If you go to a URL with a peer id that doesn't exist, you become the host (with that peer id) and start a session.
 
-4. Legitimate error handling.
+3. Legitimate error handling.
 
    - Kick everyone out if the host is destroyed / closes.
      - or ... transfer host? i think this word be pretty trivial - just pick a client, send a packet saying "set `isHost` and the list of original host's `connectedParticipants`" -- they may already have the latter information via either of the cached mappings.
@@ -33,9 +33,10 @@ No-frills peer-to-peer web conferencing.
      - Figure out a way to `.reconnect()`?
      - Destroy the peer and revisit main page (kick them out)?
 
-5. Mobile site (no video, audio + chat only).
-6. Performance
+4. Mobile site (no video, audio + chat only).
+5. Performance
 
+   - All `call` or `send` functions should be async-concurrent, so that network IO happens concurrently.
    - Restrict local video to 640p using [sdp transform or media constraints](https://stackoverflow.com/questions/71838689/how-to-use-sdptransform-in-peerjs-for-high-quality-audio-bitrate)
    - Restrict outgoing video to 144p.
    - Frame rate?
