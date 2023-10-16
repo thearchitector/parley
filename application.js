@@ -309,12 +309,14 @@ function setupJoinDiscussion(joinElement) {
       "input",
       (_) => (nameElement.parentNode.dataset.value = nameElement.value)
     );
+    nameElement.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") nameElement.blur();
+    });
     nameElement.addEventListener("change", (_) => {
       if (nameElement.value.length === 0)
         nameElement.value = nameElement.parentNode.dataset.value = randomName();
 
-      nameElement.blur();
-
+      // send the display name to all participants
       for (const participant in connectedMediaStreams) {
         const datachannel = connectedDataChannels[participant];
         datachannel.send({
