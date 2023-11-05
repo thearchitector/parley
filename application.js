@@ -66,16 +66,16 @@ function addChatMessage(peerId, message) {
   const person = document.createElement("span");
 
   newMsg.appendChild(document.createTextNode(message));
-  person.dataset.peerId = peerId;
   person.appendChild(
     document.createTextNode(
       isSelf ? nameElement.value : connectedDataClients[peerId].displayName
     )
   );
-  newMsg.appendChild(person);
 
   if (isSelf) newMsg.className = "self";
+  else person.dataset.peerId = peerId;
 
+  newMsg.appendChild(person);
   messagesElement.appendChild(newMsg);
 }
 
@@ -89,17 +89,18 @@ function setupChatWindow() {
   const sendElement = document.getElementById("send");
 
   function sendMessage(e) {
+    // clear the message box
     e.preventDefault();
     const msg = msgElement.value;
     msgElement.value = "";
 
+    // add it to the local window and send it to all clients
     addChatMessage(peer.id, msg);
     sendPacket(false, "chatMessage", msg);
   }
 
   msgElement.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      msgElement.blur();
       sendMessage(e);
     }
   });
@@ -160,7 +161,18 @@ function handleDataPackets(packet) {
       break;
     case "changeName":
       // update the peer's display name
+      connectedDataClients[peerId].displayName = payload;
+      document
+        .querySelectorAll(`[data-peer-id="${peerId}"]`)
+        .forEach((e) => (e.textContent = payload));
+
       runOrQueueAVUpdate(peerId, () => {
+        // update the display name on the preview, if one ever exists.
+        //
+        // this must be kept separate from the generic peer id-based update above, as
+        // this may never run if the remote never establishes an AV stream.
+        // it also doesn't make sense to run the same loop again since we can do a more
+        // precise update instead.
         connectedMediaStreams[peerId].children[1].children[1].textContent = payload;
       });
       break;
@@ -393,6 +405,11 @@ function setupJoinDiscussion(joinElement) {
     nameElement.addEventListener("change", (_) => {
       if (nameElement.value.length === 0 || nameElement.value.length >= 21)
         nameElement.value = nameElement.parentNode.dataset.value = randomName();
+
+      // update all chat messages sent by this client
+      document
+        .querySelectorAll("li.self span")
+        .forEach((e) => (e.textContent = nameElement.value));
 
       // send the display name to all participants
       sendPacket(false, "changeName", nameElement.value);
