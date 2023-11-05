@@ -9,7 +9,7 @@
 html {
   width: 100%;
   height: 100%;
-  background-color: #2f3237;
+  background-color: #26282c;
   overflow: hidden;
   font-family: "Cousine", monospace;
   font-weight: normal;
@@ -200,4 +200,84 @@ video {
   content: attr(data-value) " ";
   visibility: hidden;
   white-space: pre-wrap;
+}
+
+#chat {
+  flex: 0 23%;
+  height: 100%;
+  background-color: #2f3237;
+  display: flex;
+  flex-flow: column;
+  margin-left: auto;
+}
+
+#messages {
+  flex: 1;
+  padding: 0 25px;
+  font-size: 12px;
+  margin-top: 30px;
+  list-style-type: none;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+
+#messages li {
+  max-width: 85%;
+}
+
+#messages li:not(:first-of-type) {
+  padding-top: 20px;
+}
+
+#messages li.self {
+  text-align: right;
+  margin-left: auto;
+}
+
+#messages li span {
+  display: block;
+  font-size: 9px;
+  margin-top: 5px;
+  opacity: 0.75;
+}
+
+#sendZone {
+  width: 100%;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid white;
+}
+
+#msg {
+  padding: 10px;
+  resize: none;
+  border: 0;
+  background-color: inherit;
+  font-size: 14px;
+  flex: 1 0 auto;
+  color: white;
+}
+
+#msg::placeholder {
+  color: whitesmoke;
+  opacity: 0.9;
+}
+
+#msg:focus-visible {
+  outline: none;
+}
+
+#send {
+  width: 24px;
+  height: 24px;
+  margin: 0 15px 0 10px;
+  transition: 0.05s ease-in;
+  fill: white;
+}
+
+#send:hover {
+  fill: #00bcd4;
+  cursor: pointer;
 }

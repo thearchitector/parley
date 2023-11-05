@@ -2,6 +2,7 @@ const galleryElem = document.getElementById("gallery");
 const roomCodeElem = document.getElementById("roomCode");
 const galleryTemplate = galleryElem.children[1];
 const nameElement = document.getElementById("name");
+const messagesElement = document.getElementById("messages");
 
 const peerConfig = { secure: true };
 const dataChannelConfig = { serialization: "json" };
@@ -17,13 +18,21 @@ let isHost = false;
  * of all the peers that have connected to it, so it may send status updates
  * or respond to data payloads.
  */
-// a mapping of between a remote peer's id and the communication pipe to it.
-// since we know a pipe must exist (vs a media stream, which may not because of
-// no AV hardware), this also serves as the authoritative list of connected remotes
-const connectedDataChannels = {};
-// a mapping of between a remote peer id and its mute status icon element
-const connectedMediaStreams = {};
+class ConnectedDataClient {
+  constructor(datachannel) {
+    // the communication pipe to a remote peer, which we know must exist
+    this.datachannel = datachannel;
+    // display name for chat, defaults to raw peer uuid
+    this.displayName = datachannel.peer;
+  }
+}
 
+// a mapping of a remote peer id and its related data items. this also serves as
+// the authoritative list of connected remotes
+const connectedDataClients = {};
+
+// a mapping between a remote peer id and its preview element
+const connectedMediaStreams = {};
 // communication is trivial once you've established both sides of the party can talk.
 // when a participant is first connecting, however, theres no guarantee that either side
 // will be ready enough to receive the data the other party has sent them. this is
@@ -47,7 +56,78 @@ const connectedMediaStreams = {};
 // synchronization evils.
 const stateInitializationQueues = {};
 
-function runOrQueueUpdate(peerId, updateFn) {
+function addChatMessage(peerId, message) {
+  /**
+   * Adds a chat message to the chat history, either from someone else or the current
+   * user.
+   */
+  const isSelf = peerId == peer.id;
+  const newMsg = document.createElement("li");
+  const person = document.createElement("span");
+
+  newMsg.appendChild(document.createTextNode(message));
+  person.dataset.peerId = peerId;
+  person.appendChild(
+    document.createTextNode(
+      isSelf ? nameElement.value : connectedDataClients[peerId].displayName
+    )
+  );
+  newMsg.appendChild(person);
+
+  if (isSelf) newMsg.className = "self";
+
+  messagesElement.appendChild(newMsg);
+}
+
+function setupChatWindow() {
+  /**
+   * Sets up the chat window to respond to keyboard and mouse inputs for typing and
+   * sending chat messages.
+   */
+  const chatElement = document.getElementById("chat");
+  const msgElement = document.getElementById("msg");
+  const sendElement = document.getElementById("send");
+
+  function sendMessage(e) {
+    e.preventDefault();
+    const msg = msgElement.value;
+    msgElement.value = "";
+
+    addChatMessage(peer.id, msg);
+    sendPacket(false, "chatMessage", msg);
+  }
+
+  msgElement.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      msgElement.blur();
+      sendMessage(e);
+    }
+  });
+  sendElement.addEventListener("click", sendMessage);
+
+  chatElement.className = "";
+}
+
+function sendPacket(mediaOnly, packetType, payload) {
+  /**
+   * Send the packet described by the provided type and payload to all remote clients.
+   * The specific clients are determined by the first parameter, which indicates if
+   * the message should be sent to either everyone or just ones with an AV connection.
+   */
+  if (peer === null) return;
+  const packet = {
+    peerId: peer.id,
+    type: packetType,
+    payload: payload,
+  };
+
+  for (const participant in mediaOnly ? connectedMediaStreams : connectedDataClients) {
+    const datachannel = connectedDataClients[participant].datachannel;
+    datachannel.send(packet);
+  }
+}
+
+function runOrQueueAVUpdate(peerId, updateFn) {
   /**
    * If the provided peer already has an AV connection, run the update immediately.
    * Otherwise, add the callback to peer's queue so that it may be run when the stream
@@ -70,7 +150,7 @@ function handleDataPackets(packet) {
       break;
     case "syncMute":
       // toggle the mute icon
-      runOrQueueUpdate(peerId, () => {
+      runOrQueueAVUpdate(peerId, () => {
         connectedMediaStreams[
           peerId
         ].children[1].children[0].src = `vendor/icons/microphone${
@@ -80,9 +160,12 @@ function handleDataPackets(packet) {
       break;
     case "changeName":
       // update the peer's display name
-      runOrQueueUpdate(peerId, () => {
+      runOrQueueAVUpdate(peerId, () => {
         connectedMediaStreams[peerId].children[1].children[1].textContent = payload;
       });
+      break;
+    case "chatMessage":
+      addChatMessage(peerId, payload);
       break;
     default:
       console.warn(
@@ -101,8 +184,8 @@ function establishDataStream(datachannel) {
   datachannel.on("close", () => {
     // these should always be true, but protects against the race condition where
     // the remote disconnects before the channel is actually opened
-    if (datachannel.peer in connectedDataChannels)
-      delete connectedDataChannels[datachannel.peer];
+    if (datachannel.peer in connectedDataClients)
+      delete connectedDataClients[datachannel.peer];
     if (datachannel.peer in stateInitializationQueues)
       delete stateInitializationQueues[datachannel.peer];
   });
@@ -120,7 +203,7 @@ function establishDataStream(datachannel) {
       // so this must send it an empty list rather than nothing at all.
       datachannel.send({
         type: "initialize",
-        payload: Object.keys(connectedDataChannels),
+        payload: Object.keys(connectedDataClients),
       });
     }
 
@@ -138,7 +221,7 @@ function establishDataStream(datachannel) {
       payload: nameElement.value,
     });
 
-    connectedDataChannels[datachannel.peer] = datachannel;
+    connectedDataClients[datachannel.peer] = new ConnectedDataClient(datachannel);
     stateInitializationQueues[datachannel.peer] = [];
   });
 
@@ -191,12 +274,13 @@ function connectToRemote(peerId) {
 
 function parley() {
   /**
-   * Initializes a parley by binding listeners to the initialization, data packet,
-   * and AV call events.
+   * Initializes a parley by setting up the UI and binding listeners to the
+   * initialization, data packet, and AV call events.
    */
-  console.debug(`Connecting to room: ${roomCode}`);
-
+  setupChatWindow();
   document.getElementById("panel").remove();
+
+  console.debug(`Connecting to room: ${roomCode}`);
   roomCodeElem.className = "";
 
   // on assigned identity
@@ -282,16 +366,10 @@ function setupJoinDiscussion(joinElement) {
         // mediastreams come with a "mute" and "unmute" event. unfortunately, those
         // events are not propagated across the network. instead, we have to send
         // an "event packet" updating all clients whenever our local state changes.
-        for (const participant in connectedMediaStreams) {
-          // loop through media streams keys instead of channels since only clients
-          // connected via media streams can (un)mute
-          const datachannel = connectedDataChannels[participant];
-          datachannel.send({
-            peerId: peer.id,
-            type: "syncMute",
-            payload: { muted: isMuted },
-          });
-        }
+        //
+        // `true` means to send to clients also connected via media streams, since
+        // only those clients care about mute state changes
+        sendPacket(true, "syncMute", isMuted);
       }
     ).click();
     // setup camera mute button
@@ -313,17 +391,11 @@ function setupJoinDiscussion(joinElement) {
       if (e.key === "Enter") nameElement.blur();
     });
     nameElement.addEventListener("change", (_) => {
-      if (nameElement.value.length === 0)
+      if (nameElement.value.length === 0 || nameElement.value.length >= 21)
         nameElement.value = nameElement.parentNode.dataset.value = randomName();
 
       // send the display name to all participants
-      for (const participant in connectedMediaStreams) {
-        const datachannel = connectedDataChannels[participant];
-        datachannel.send({
-          type: "changeName",
-          payload: { peerId: peer.id, displayName: nameElement.value },
-        });
-      }
+      sendPacket(false, "changeName", nameElement.value);
     });
 
     // ensure graceful closure and cleanup of the local peer
