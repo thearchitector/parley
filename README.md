@@ -1,5 +1,7 @@
 # Parley 🏴‍☠️
 
+![GitHub Pages deployment status](<https://raster.shields.io/github/actions/workflow/status/thearchitector/parley/gh_pages.yml?label=deployment&color=rgb(0%2C%20167%2C%20244)>)
+
 No-frills peer-to-peer web conferencing.
 
 ## Features
@@ -12,11 +14,15 @@ No-frills peer-to-peer web conferencing.
   - Audio mute indicators on yourself and participants.
 - Have a screen name.
 - Live chat.
+  - Send messages.
+  - Receive message, and know who sent them (even if a name changes).
 
 ## Not features
 
 - Breakout rooms.
 - Session recording.
+
+But feel free to file a PR.
 
 ## To Do
 
@@ -42,6 +48,21 @@ No-frills peer-to-peer web conferencing.
    - Frame rate?
    - Spoke-style communication? (instead of each connecting to every other, they all connect to the host which sends AV/data to every other)
      - Not immediately obvious if this is a better design -- it reduces the total number of conns, but at least doubles latency for each one
+
+## Release
+
+Minify the source code with Terser. These options seem to minify and mangle as expected to support old browsers:
+
+```javascript
+{
+  module: false,
+  compress: { toplevel: true },
+  mangle: { safari10: true, toplevel: true },
+  output: { safari10: true },
+  parse: {},
+  rename: {},
+}
+```
 
 ## License
 
