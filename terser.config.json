@@ -1,0 +1,8 @@
+{
+  "module": false,
+  "compress": { "toplevel": true },
+  "mangle": { "safari10": true, "toplevel": true },
+  "output": { "safari10": true },
+  "parse": {},
+  "rename": {}
+}
