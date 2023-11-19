@@ -31,18 +31,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+          run_install: false
       - name: Install node
         uses: actions/setup-node@v4
         with:
           cache: "pnpm"
-      - name: Install minification tools
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
-          run_install: true
       - name: Run pre-deployment optimizations
         shell: bash
         run: |
+          pnpm install -D
           pnpm terser --config-file terser.config.json application.js -o application.js
           pnpm postcss style.css -o style.css
       - name: Setup Pages
