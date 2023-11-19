@@ -2,7 +2,7 @@
 
 set -e
 
-SRC_PREFIX="public"
+SRC="public"
 
 svgo -rf ${SRC}/vendor/icons --precision 0
 terser ${SRC}/vendor/randomNames.js -o ${SRC}/vendor/randomNames.js
