@@ -274,10 +274,10 @@ video {
   height: 24px;
   margin: 0 15px 0 10px;
   transition: 0.05s ease-in;
-  fill: white;
+  filter: brightness(0) invert(1);
 }
 
 #send:hover {
-  fill: #00bcd4;
+  filter: brightness(100%);
   cursor: pointer;
 }

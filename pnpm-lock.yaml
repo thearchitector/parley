@@ -17,6 +17,9 @@ devDependencies:
   postcss-cli:
     specifier: ^10.1.0
     version: 10.1.0(postcss@8.4.31)
+  svgo:
+    specifier: ^3.0.4
+    version: 3.0.4
   terser:
     specifier: ^5.24.0
     version: 5.24.0

@@ -7,6 +7,10 @@
     "cssnano-preset-advanced": "^6.0.1",
     "postcss": "^8.4.31",
     "postcss-cli": "^10.1.0",
+    "svgo": "^3.0.4",
     "terser": "^5.24.0"
-  }
+  },
+  "browserslist": [
+    "fully supports rtcpeerconnection and fully supports es6 and fully supports async-functions"
+  ]
 }

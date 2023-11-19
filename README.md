@@ -51,18 +51,7 @@ But feel free to file a PR.
 
 ## Release
 
-Minify the source code with Terser. These options seem to minify and mangle as expected to support old browsers:
-
-```javascript
-{
-  module: false,
-  compress: { toplevel: true },
-  mangle: { safari10: true, toplevel: true },
-  output: { safari10: true },
-  parse: {},
-  rename: {},
-}
-```
+Releases happen automatically with commits to `main`. Asset optimizations happen automatically during artifact generation using the `bin/optimize.sh` script.
 
 ## License
 
